@@ -1,0 +1,71 @@
+# ============================================================
+# MedRAG Backend Dependencies
+# Python 3.11+
+# ============================================================
+
+# Web Framework
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+python-multipart==0.0.12
+
+# Configuration
+pydantic==2.10.3
+pydantic-settings==2.6.1
+python-dotenv==1.0.1
+
+# LLM & Embeddings
+anthropic==0.39.0
+openai==1.57.0
+
+# LangChain (orchestration)
+langchain==0.3.11
+langchain-anthropic==0.3.2
+langchain-openai==0.2.12
+langchain-community==0.3.11
+
+# Vector Database
+qdrant-client==1.12.1
+langchain-qdrant==0.2.0
+
+# Embeddings (open-source fallback)
+sentence-transformers==3.3.1
+transformers==4.47.0
+torch==2.5.1
+
+# Database
+sqlalchemy[asyncio]==2.0.36
+asyncpg==0.30.0
+psycopg2-binary==2.9.10
+alembic==1.14.0
+
+# Cache & Task Queue
+redis==5.2.0
+celery==5.4.0
+kombu==5.4.2
+
+# HTTP Clients
+httpx==0.28.0
+aiohttp==3.11.8
+requests==2.32.3
+
+# Document Parsing
+beautifulsoup4==4.12.3
+lxml==5.3.0
+pypdf==5.1.0
+html2text==2024.2.26
+
+# Text Processing
+tiktoken==0.8.0
+
+# Logging
+structlog==24.4.0
+
+# Testing
+pytest==8.3.4
+pytest-asyncio==0.24.0
+pytest-mock==3.14.0
+httpx==0.28.0
+
+# Utilities
+tenacity==9.0.0
+python-dateutil==2.9.0

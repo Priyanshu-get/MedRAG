@@ -1,0 +1,161 @@
+/* ── Google Fonts ──────────────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@import "tailwindcss";
+
+/* ── Design Tokens ─────────────────────────────────────────────────────────── */
+:root {
+  --bg-primary:    #060d1a;
+  --bg-secondary:  #0a1628;
+  --bg-card:       #0e1e35;
+  --bg-glass:      rgba(14, 30, 53, 0.75);
+
+  --border-subtle: rgba(56, 139, 253, 0.12);
+  --border-mid:    rgba(56, 139, 253, 0.25);
+  --border-glow:   rgba(56, 139, 253, 0.5);
+
+  --accent-blue:   #3b9dff;
+  --accent-cyan:   #22d3ee;
+  --accent-teal:   #2dd4bf;
+  --accent-green:  #34d399;
+  --accent-amber:  #fbbf24;
+  --accent-red:    #f87171;
+
+  --text-primary:   #e8f0fe;
+  --text-secondary: #8b9cc8;
+  --text-muted:     #4a5980;
+
+  --radius-sm:  6px;
+  --radius-md:  12px;
+  --radius-lg:  18px;
+  --radius-xl:  24px;
+
+  --shadow-glow:  0 0 40px rgba(59, 157, 255, 0.15);
+  --shadow-card:  0 8px 32px rgba(0, 0, 0, 0.4);
+  --shadow-deep:  0 20px 60px rgba(0, 0, 0, 0.6);
+}
+
+/* ── Base Reset ─────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* ── Scrollbar ──────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-primary); }
+::-webkit-scrollbar-thumb {
+  background: var(--border-mid);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--accent-blue); }
+
+/* ── Glassmorphism card ─────────────────────────────────────────────────────── */
+.glass-card {
+  background: var(--bg-glass);
+  border: 1px solid var(--border-subtle);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
+
+/* ── Glow pulse animation ───────────────────────────────────────────────────── */
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 20px rgba(59, 157, 255, 0.15); }
+  50%       { box-shadow: 0 0 40px rgba(59, 157, 255, 0.35); }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes typing-dot {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30%            { transform: translateY(-4px); opacity: 1; }
+}
+
+.animate-slide-up  { animation: slide-up 0.35s ease-out; }
+.animate-fade-in   { animation: fade-in 0.25s ease-out; }
+.animate-glow      { animation: glow-pulse 3s ease-in-out infinite; }
+
+/* ── Typing indicator ───────────────────────────────────────────────────────── */
+.typing-dot {
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--accent-blue);
+  animation: typing-dot 1.4s infinite ease-in-out;
+}
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+/* ── Shimmer loading skeleton ───────────────────────────────────────────────── */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--bg-card) 25%,
+    rgba(56, 139, 253, 0.08) 50%,
+    var(--bg-card) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius-sm);
+}
+
+/* ── Citation tag ───────────────────────────────────────────────────────────── */
+cite {
+  display: inline-flex;
+  align-items: center;
+  font-style: normal;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(59, 157, 255, 0.15);
+  border: 1px solid rgba(59, 157, 255, 0.35);
+  color: var(--accent-blue);
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+  vertical-align: super;
+  line-height: 1.4;
+}
+cite:hover {
+  background: rgba(59, 157, 255, 0.28);
+  border-color: var(--accent-blue);
+}
+
+/* ── Focus ring ──────────────────────────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--accent-blue);
+  outline-offset: 2px;
+}
+
+/* ── Monospace (code inline) ────────────────────────────────────────────────── */
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.88em;
+  background: rgba(255,255,255,0.05);
+  padding: 2px 5px;
+  border-radius: 4px;
+}
