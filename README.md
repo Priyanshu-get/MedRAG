@@ -35,27 +35,11 @@ Zero hallucination tolerance — if evidence doesn't exist, the system says so.
 
 ## 🏗️ Architecture
 
-```
-User Query
-    │
-    ▼
-┌─────────────────────────────────────────────────────────┐
-│                    FastAPI Backend                       │
-│                                                         │
-│  Stage 1 ── Query Rewriter (MeSH expansion via Claude)  │
-│  Stage 2 ── Hybrid Retriever (Qdrant + PostgreSQL FTS)  │
-│  Stage 3 ── Cross-Encoder Re-Ranker                     │
-│  Stage 4 ── Context Builder (token-budget assembly)     │
-│  Stage 5 ── Hallucination Guard ← CRITICAL GATE         │
-│  Stage 6 ── Answer Generator (Claude, strict prompt)    │
-│  Stage 7 ── Citation Injector (SourceMetadata + HTML)   │
-└─────────────────────────────────────────────────────────┘
-    │
-    ▼
-Grounded answer with [Source N] citations
-   — OR —
-"No Evidence Found" (guard failed or zero retrieval)
-```
+<div align="center">
+  <img src="docs/architecture.png" alt="MedRAG Architecture Diagram" width="680" />
+</div>
+
+The system is built around a **7-stage pipeline** that processes every query sequentially, with hard exit gates at stages 1 and 5 to prevent hallucination:
 
 ### Anti-Hallucination Strategy (7 Layers)
 
