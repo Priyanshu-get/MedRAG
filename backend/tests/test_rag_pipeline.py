@@ -10,22 +10,18 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 
 def _make_guard_response(has_answer: bool, confidence: float, reasoning: str) -> MagicMock:
-    mock_content = MagicMock()
-    mock_content.text = json.dumps({
+    mock_resp = MagicMock()
+    mock_resp.text = json.dumps({
         "has_answer": has_answer,
         "confidence": confidence,
         "reasoning": reasoning,
     })
-    mock_resp = MagicMock()
-    mock_resp.content = [mock_content]
     return mock_resp
 
 
 def _make_answer_response(answer_text: str) -> MagicMock:
-    mock_content = MagicMock()
-    mock_content.text = answer_text
     mock_resp = MagicMock()
-    mock_resp.content = [mock_content]
+    mock_resp.text = answer_text
     return mock_resp
 
 
@@ -60,11 +56,11 @@ async def test_pipeline_returns_no_answer_when_guard_rejects(sample_chunks):
         patch("app.rag.pipeline.build_context", return_value=("some context", sample_chunks)),
         patch("app.rag.pipeline.get_cached_response", new_callable=AsyncMock, return_value=None),
         patch("app.rag.pipeline.cache_response", new_callable=AsyncMock),
-        patch("app.rag.hallucination_guard.get_client") as mock_get_client,
+        patch("app.rag.hallucination_guard.get_model") as mock_get_model,
     ):
-        mock_client = AsyncMock()
-        mock_client.messages.create = AsyncMock(return_value=guard_response)
-        mock_get_client.return_value = mock_client
+        mock_model = AsyncMock()
+        mock_model.generate_content_async = AsyncMock(return_value=guard_response)
+        mock_get_model.return_value = mock_model
 
         from app.rag.pipeline import run_rag_pipeline
 
@@ -92,16 +88,16 @@ async def test_pipeline_returns_grounded_answer_with_citations(sample_chunks, re
         patch("app.rag.pipeline.build_context", return_value=(relevant_context, sample_chunks)),
         patch("app.rag.pipeline.get_cached_response", new_callable=AsyncMock, return_value=None),
         patch("app.rag.pipeline.cache_response", new_callable=AsyncMock),
-        patch("app.rag.hallucination_guard.get_client") as mock_guard_client,
-        patch("app.rag.answer_generator.get_client") as mock_answer_client,
+        patch("app.rag.hallucination_guard.get_model") as mock_guard_model,
+        patch("app.rag.answer_generator.get_model") as mock_answer_model,
     ):
         mock_guard = AsyncMock()
-        mock_guard.messages.create = AsyncMock(return_value=guard_response)
-        mock_guard_client.return_value = mock_guard
+        mock_guard.generate_content_async = AsyncMock(return_value=guard_response)
+        mock_guard_model.return_value = mock_guard
 
         mock_answer = AsyncMock()
-        mock_answer.messages.create = AsyncMock(return_value=answer_response)
-        mock_answer_client.return_value = mock_answer
+        mock_answer.generate_content_async = AsyncMock(return_value=answer_response)
+        mock_answer_model.return_value = mock_answer
 
         from app.rag.pipeline import run_rag_pipeline
         # Reload to get fresh import

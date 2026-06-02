@@ -8,14 +8,14 @@ import json
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
+from app.rag.hallucination_guard import validate_context
+
 
 # ── Unit tests (mocked LLM) ───────────────────────────────────────────────────
 
 @pytest.mark.asyncio
 async def test_guard_returns_false_for_empty_context():
     """Empty context must always return can_answer=False with confidence=0."""
-    from app.rag.hallucination_guard import validate_context
-
     result = await validate_context(
         query="What is the treatment for hypertension?",
         context="",
@@ -36,17 +36,15 @@ async def test_guard_returns_false_for_irrelevant_context(irrelevant_context):
         "reasoning": "The context is about photosynthesis, not hypertension treatment.",
     })
 
-    mock_content = MagicMock()
-    mock_content.text = mock_response_text
     mock_response = MagicMock()
-    mock_response.content = [mock_content]
+    mock_response.text = mock_response_text
 
     with patch(
-        "app.rag.hallucination_guard.get_client"
-    ) as mock_get_client:
-        mock_client = AsyncMock()
-        mock_client.messages.create = AsyncMock(return_value=mock_response)
-        mock_get_client.return_value = mock_client
+        "app.rag.hallucination_guard.get_model"
+    ) as mock_get_model:
+        mock_model = AsyncMock()
+        mock_model.generate_content_async = AsyncMock(return_value=mock_response)
+        mock_get_model.return_value = mock_model
 
         result = await validate_context(
             query="What is the first-line treatment for hypertension?",
@@ -68,17 +66,15 @@ async def test_guard_returns_true_for_relevant_context(relevant_context):
         "reasoning": "Context directly states ACE inhibitors and thiazide diuretics as first-line agents.",
     })
 
-    mock_content = MagicMock()
-    mock_content.text = mock_response_text
     mock_response = MagicMock()
-    mock_response.content = [mock_content]
+    mock_response.text = mock_response_text
 
     with patch(
-        "app.rag.hallucination_guard.get_client"
-    ) as mock_get_client:
-        mock_client = AsyncMock()
-        mock_client.messages.create = AsyncMock(return_value=mock_response)
-        mock_get_client.return_value = mock_client
+        "app.rag.hallucination_guard.get_model"
+    ) as mock_get_model:
+        mock_model = AsyncMock()
+        mock_model.generate_content_async = AsyncMock(return_value=mock_response)
+        mock_get_model.return_value = mock_model
 
         result = await validate_context(
             query="What is the first-line treatment for hypertension?",
@@ -98,17 +94,15 @@ async def test_guard_enforces_confidence_below_half_for_false():
         "reasoning": "Context is only tangentially related.",
     })
 
-    mock_content = MagicMock()
-    mock_content.text = mock_response_text
     mock_response = MagicMock()
-    mock_response.content = [mock_content]
+    mock_response.text = mock_response_text
 
     with patch(
-        "app.rag.hallucination_guard.get_client"
-    ) as mock_get_client:
-        mock_client = AsyncMock()
-        mock_client.messages.create = AsyncMock(return_value=mock_response)
-        mock_get_client.return_value = mock_client
+        "app.rag.hallucination_guard.get_model"
+    ) as mock_get_model:
+        mock_model = AsyncMock()
+        mock_model.generate_content_async = AsyncMock(return_value=mock_response)
+        mock_get_model.return_value = mock_model
 
         result = await validate_context(
             query="What is the mechanism of action of metformin?",
@@ -123,11 +117,11 @@ async def test_guard_enforces_confidence_below_half_for_false():
 async def test_guard_fails_safely_on_llm_error():
     """If LLM call fails, guard should return can_answer=False (conservative default)."""
     with patch(
-        "app.rag.hallucination_guard.get_client"
-    ) as mock_get_client:
-        mock_client = AsyncMock()
-        mock_client.messages.create = AsyncMock(side_effect=Exception("API timeout"))
-        mock_get_client.return_value = mock_client
+        "app.rag.hallucination_guard.get_model"
+    ) as mock_get_model:
+        mock_model = AsyncMock()
+        mock_model.generate_content_async = AsyncMock(side_effect=Exception("API timeout"))
+        mock_get_model.return_value = mock_model
 
         result = await validate_context(
             query="What is the treatment for sepsis?",

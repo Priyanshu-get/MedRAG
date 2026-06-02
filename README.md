@@ -82,8 +82,8 @@ cp .env.example backend/.env
 Open `backend/.env` and fill in your API keys (see [Configuration](#️-configuration) for details):
 
 ```env
-ANTHROPIC_API_KEY=sk-ant-api03-...      # Required
-OPENAI_API_KEY=sk-...                   # Required if EMBEDDING_PROVIDER=openai
+GEMINI_API_KEY=AQ.Ab8RN6J_nNgf7xp4...   # Required — Get at aistudio.google.com/apikey
+OPENAI_API_KEY=sk-...                   # Optional — Only if EMBEDDING_PROVIDER=openai
 NCBI_API_KEY=your_ncbi_key             # Free — get at ncbi.nlm.nih.gov/account/
 NCBI_EMAIL=your@email.com              # Required by NCBI
 ```
@@ -96,7 +96,7 @@ docker-compose up -d
 
 This starts:
 - **Qdrant** at `http://localhost:6333` (vector database)
-- **PostgreSQL 16 + pgvector** at `localhost:5432` (metadata + full-text search)
+- **PostgreSQL 16 + pgvector** at `localhost:5433` (metadata + full-text search)
 - **Redis** at `localhost:6379` (query cache + Celery broker)
 
 Verify all services are healthy:
@@ -179,7 +179,7 @@ All configuration lives in `backend/.env`. Copy from `.env.example` to get start
 
 | Variable | Description | Where to get |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | Powers the query rewriter, hallucination guard, and answer generator | [console.anthropic.com](https://console.anthropic.com) |
+| `GEMINI_API_KEY` | Powers the query rewriter, hallucination guard, and answer generator | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) — **free** |
 | `NCBI_API_KEY` | PubMed search (10 req/sec with key, 3/sec without) | [ncbi.nlm.nih.gov/account](https://www.ncbi.nlm.nih.gov/account/) — **free** |
 | `NCBI_EMAIL` | Required by NCBI E-utilities terms of service | Your email address |
 
@@ -197,31 +197,31 @@ Cost: ~$0.13 per million tokens
 #### Option B — Local BAAI/bge (Free, Runs on CPU)
 ```env
 EMBEDDING_PROVIDER=local
-LOCAL_EMBEDDING_MODEL=BAAI/bge-large-en-v1.5
-QDRANT_VECTOR_SIZE=1024
+LOCAL_EMBEDDING_MODEL=BAAI/bge-small-en-v1.5
+QDRANT_VECTOR_SIZE=384
 ```
-No API key needed. Downloads ~1.3 GB model on first run.
+No API key needed. Downloads ~380 MB model on first run.
 
 ### Full Configuration Reference
 
 ```env
 # ── LLM ───────────────────────────────────────────────────────────────────────
-ANTHROPIC_API_KEY=sk-ant-...
+GEMINI_API_KEY=AQ.Ab8RN6J...               # Required — Get at aistudio.google.com/apikey
 OPENAI_API_KEY=sk-...                      # Only needed if EMBEDDING_PROVIDER=openai
-LLM_MODEL=claude-sonnet-4-20250514         # Claude model for RAG pipeline
+LLM_MODEL=gemini-2.0-flash                 # Google Gemini model for RAG pipeline
 
 # ── Embeddings ─────────────────────────────────────────────────────────────────
-EMBEDDING_PROVIDER=openai                  # "openai" | "local"
+EMBEDDING_PROVIDER=local                   # "openai" | "local"
 OPENAI_EMBEDDING_MODEL=text-embedding-3-large
-LOCAL_EMBEDDING_MODEL=BAAI/bge-large-en-v1.5
+LOCAL_EMBEDDING_MODEL=BAAI/bge-small-en-v1.5
 
 # ── Qdrant (Vector Database) ───────────────────────────────────────────────────
 QDRANT_URL=http://localhost:6333
 QDRANT_COLLECTION=medrag_docs
-QDRANT_VECTOR_SIZE=3072                    # 3072 for OpenAI, 1024 for BAAI/bge
+QDRANT_VECTOR_SIZE=384                     # 3072 for OpenAI, 384 for bge-small
 
 # ── PostgreSQL (Metadata + Full-Text Search) ───────────────────────────────────
-DATABASE_URL=postgresql+asyncpg://medrag_user:medrag_pass@localhost:5432/medrag
+DATABASE_URL=postgresql+asyncpg://medrag_user:medrag_pass@localhost:5433/medrag
 
 # ── Redis (Cache + Task Queue) ─────────────────────────────────────────────────
 REDIS_URL=redis://localhost:6379

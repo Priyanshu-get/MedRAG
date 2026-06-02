@@ -1,6 +1,6 @@
 """
 Query Rewriter — expands medical queries into optimized PubMed search terms.
-Uses Claude to inject MeSH vocabulary, expand abbreviations, and decompose
+Uses Gemini to inject MeSH vocabulary, expand abbreviations, and decompose
 complex queries into retrievable sub-questions.
 """
 from __future__ import annotations
@@ -9,21 +9,27 @@ import json
 import logging
 from typing import List, Optional
 
-import anthropic
+import google.generativeai as genai
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from app.config import settings
 
 logger = logging.getLogger(__name__)
 
-_client: Optional[anthropic.AsyncAnthropic] = None
+_model: Optional[genai.GenerativeModel] = None
 
 
-def get_client() -> anthropic.AsyncAnthropic:
-    global _client
-    if _client is None:
-        _client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
-    return _client
+def get_model() -> genai.GenerativeModel:
+    global _model
+    if _model is None:
+        genai.configure(api_key=settings.gemini_api_key)
+        _model = genai.GenerativeModel(
+            model_name=settings.llm_model,
+            generation_config=genai.GenerationConfig(
+                temperature=0.3,
+            ),
+        )
+    return _model
 
 
 REWRITE_PROMPT = """\
@@ -58,25 +64,18 @@ async def rewrite_query(user_query: str) -> List[str]:
     Falls back to the original query if LLM call fails.
     """
     try:
-        client = get_client()
-        response = await client.messages.create(
-            model=settings.llm_model,
-            max_tokens=300,
-            messages=[
-                {
-                    "role": "user",
-                    "content": REWRITE_PROMPT.format(query=user_query),
-                }
-            ],
+        model = get_model()
+        response = await model.generate_content_async(
+            REWRITE_PROMPT.format(query=user_query)
         )
-        text = response.content[0].text.strip()
-
-        # Strip markdown code fences if present
-        if text.startswith("```"):
-            text = text.split("```")[1]
-            if text.startswith("json"):
-                text = text[4:]
-
+        text = response.text.strip()
+        
+        # Robustly extract JSON using regex
+        import re
+        match = re.search(r'\[.*\]', text, re.DOTALL)
+        if match:
+            text = match.group(0)
+            
         queries = json.loads(text)
         if isinstance(queries, list) and len(queries) >= 1:
             # Always include the original query as a safety net

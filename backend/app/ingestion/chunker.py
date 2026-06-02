@@ -112,7 +112,7 @@ def _make_base_id(meta: Dict) -> str:
     """Create a stable base ID from document identifiers."""
     pmid   = meta.get("pmid",   "")
     pmc_id = meta.get("pmc_id", "")
-    doi    = meta.get("doi",    "").replace("/", "_").replace(".", "_")
+    doi    = (meta.get("doi") or "").replace("/", "_").replace(".", "_")
     nct    = meta.get("nct_id", "")
 
     if pmid:

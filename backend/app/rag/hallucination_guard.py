@@ -1,7 +1,7 @@
 """
 Hallucination Guard — the most critical component of the pipeline.
 
-Uses LLM-as-judge to validate whether retrieved context is sufficient to
+Uses Gemini as LLM-as-judge to validate whether retrieved context is sufficient to
 answer the user's query BEFORE generating an answer. If confidence is below
 the threshold, the system returns "I don't know" — no answer is generated.
 
@@ -13,21 +13,27 @@ import json
 import logging
 from typing import Dict, Optional
 
-import anthropic
+import google.generativeai as genai
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from app.config import settings
 
 logger = logging.getLogger(__name__)
 
-_client: Optional[anthropic.AsyncAnthropic] = None
+_model: Optional[genai.GenerativeModel] = None
 
 
-def get_client() -> anthropic.AsyncAnthropic:
-    global _client
-    if _client is None:
-        _client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
-    return _client
+def get_model() -> genai.GenerativeModel:
+    global _model
+    if _model is None:
+        genai.configure(api_key=settings.gemini_api_key)
+        _model = genai.GenerativeModel(
+            model_name=settings.llm_model,
+            generation_config=genai.GenerationConfig(
+                temperature=0.1,
+            ),
+        )
+    return _model
 
 
 GUARD_PROMPT = """\
@@ -80,25 +86,22 @@ async def validate_context(query: str, context: str) -> Dict:
         }
 
     try:
-        client = get_client()
-        response = await client.messages.create(
-            model=settings.llm_model,
-            max_tokens=200,
-            messages=[
-                {
-                    "role": "user",
-                    "content": GUARD_PROMPT.format(query=query, context=context[:6000]),
-                }
-            ],
+        model = get_model()
+        response = await model.generate_content_async(
+            GUARD_PROMPT.format(query=query, context=context[:6000])
         )
-        raw = response.content[0].text.strip()
-
-        # Strip markdown fences if present
-        if raw.startswith("```"):
-            raw = raw.split("```")[1]
-            if raw.startswith("json"):
-                raw = raw[4:]
-
+        raw = response.text.strip()
+        
+        # Robustly extract JSON using regex
+        import re
+        match = re.search(r'\{.*\}', raw, re.DOTALL)
+        if match:
+            raw = match.group(0)
+        else:
+            logger.warning(f"Could not extract JSON using regex from raw response: {raw!r}")
+            # Fallback to dummy JSON so the pipeline continues
+            raw = '{"has_answer": false, "confidence": 0.0, "reasoning": "Fallback due to extraction failure."}'
+            
         result = json.loads(raw)
 
         has_answer = bool(result.get("has_answer", False))

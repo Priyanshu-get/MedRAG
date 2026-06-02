@@ -15,16 +15,16 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    # ── LLM ────────────────────────────────────────────────
-    anthropic_api_key: str = ""
-    openai_api_key: str = ""
-    llm_model: str = "claude-sonnet-4-20250514"
+    # ── LLM ────────────────────────────────────────────
+    gemini_api_key: str = ""
+    openai_api_key: str = ""            # Only needed if EMBEDDING_PROVIDER=openai
+    llm_model: str = "gemini-2.0-flash"
 
-    # ── Embeddings ─────────────────────────────────────────
-    embedding_provider: str = "openai"           # "openai" | "local"
+    # ── Embeddings ─────────────────────────────────────
+    embedding_provider: str = "local"            # "openai" | "local"
     openai_embedding_model: str = "text-embedding-3-large"
-    local_embedding_model: str = "BAAI/bge-large-en-v1.5"
-    qdrant_vector_size: int = 3072               # 3072 for OAI, 1024 for bge
+    local_embedding_model: str = "BAAI/bge-small-en-v1.5"
+    qdrant_vector_size: int = 384               # 3072 for OpenAI, 384 for bge-small/MiniLM
 
     # ── Qdrant ─────────────────────────────────────────────
     qdrant_url: str = "http://localhost:6333"
@@ -39,9 +39,12 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379"
     cache_ttl_seconds: int = 3600
 
-    # ── NCBI / PubMed ──────────────────────────────────────
+    # ── NCBI / PubMed ──────────────────────────────────
     ncbi_api_key: str = ""
     ncbi_email: str = "medrag@example.com"
+
+    # ── Anthropic (legacy — no longer used) ────────────
+    anthropic_api_key: str = ""         # kept for backward compat
 
     # ── Semantic Scholar ───────────────────────────────────
     semantic_scholar_api_key: str = ""

@@ -67,6 +67,7 @@ async def run_rag_pipeline(
     user_query: str,
     max_sources: int = 5,
     use_cache: bool = True,
+    auto_ingest: bool = True,
 ) -> ChatResponse:
     """
     Execute the full 7-stage MedRAG pipeline.
@@ -101,6 +102,13 @@ async def run_rag_pipeline(
 
     # Early exit: zero retrieval
     if not retrieved_chunks:
+        if auto_ingest:
+            ingest_topic = expanded_queries[0] if expanded_queries else user_query
+            logger.info("Auto-ingesting for zero-retrieval topic: '%s' (using query: '%s')", user_query, ingest_topic)
+            from app.ingestion.tasks import _ingest_topic_all_sources
+            await _ingest_topic_all_sources(ingest_topic, max_results=15, sources=["pubmed"])
+            return await run_rag_pipeline(user_query, max_sources, use_cache, auto_ingest=False)
+
         logger.info("Pipeline exit: zero chunks retrieved")
         return _build_no_answer_response(
             query=user_query,
@@ -131,6 +139,13 @@ async def run_rag_pipeline(
     )
 
     if not guard_result["can_answer"]:
+        if auto_ingest:
+            ingest_topic = expanded_queries[0] if expanded_queries else user_query
+            logger.info("Auto-ingesting for low-confidence topic: '%s' (using query: '%s')", user_query, ingest_topic)
+            from app.ingestion.tasks import _ingest_topic_all_sources
+            await _ingest_topic_all_sources(ingest_topic, max_results=15, sources=["pubmed"])
+            return await run_rag_pipeline(user_query, max_sources, use_cache, auto_ingest=False)
+
         return _build_no_answer_response(
             query=user_query,
             answer=_no_answer_low_confidence(

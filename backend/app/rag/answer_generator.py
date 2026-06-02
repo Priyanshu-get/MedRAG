@@ -1,36 +1,42 @@
 """
-Answer Generator — strictly evidence-bound LLM response generation.
+Answer Generator — strictly evidence-bound LLM response generation using Gemini.
 The LLM is constrained by a numbered rule set prohibiting ANY use of external knowledge.
 Every factual claim MUST cite a [Source N] from the provided context.
 """
 from __future__ import annotations
 
 import logging
+import re
 from typing import Dict, List, Optional
 
-import anthropic
+import google.generativeai as genai
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from app.config import settings
 
 logger = logging.getLogger(__name__)
 
-_client: Optional[anthropic.AsyncAnthropic] = None
+_model: Optional[genai.GenerativeModel] = None
 
 
-def get_client() -> anthropic.AsyncAnthropic:
-    global _client
-    if _client is None:
-        _client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
-    return _client
+def get_model() -> genai.GenerativeModel:
+    global _model
+    if _model is None:
+        genai.configure(api_key=settings.gemini_api_key)
+        _model = genai.GenerativeModel(
+            model_name=settings.llm_model,
+            system_instruction=(
+                "You are a clinical evidence assistant. You answer medical questions EXCLUSIVELY using "
+                "the research excerpts provided to you. You have NO permission to use your own training "
+                "knowledge, background knowledge, or make any inference beyond what is explicitly stated "
+                "in the provided sources."
+            ),
+            generation_config=genai.GenerationConfig(
+                temperature=0.2,
+            ),
+        )
+    return _model
 
-
-SYSTEM_PROMPT = """\
-You are a clinical evidence assistant. You answer medical questions EXCLUSIVELY using \
-the research excerpts provided to you. You have NO permission to use your own training \
-knowledge, background knowledge, or make any inference beyond what is explicitly stated \
-in the provided sources.
-"""
 
 ANSWER_PROMPT = """\
 STRICT RULES — YOU MUST FOLLOW EVERY ONE OF THESE WITHOUT EXCEPTION:
@@ -102,25 +108,16 @@ async def generate_answer(query: str, ranked_chunks: List[Dict]) -> Dict:
     context_str = "\n\n---\n\n".join(context_parts)
 
     try:
-        client = get_client()
-        response = await client.messages.create(
-            model=settings.llm_model,
-            max_tokens=1500,
-            system=SYSTEM_PROMPT,
-            messages=[
-                {
-                    "role": "user",
-                    "content": ANSWER_PROMPT.format(
-                        context_with_citations=context_str,
-                        query=query,
-                    ),
-                }
-            ],
+        model = get_model()
+        response = await model.generate_content_async(
+            ANSWER_PROMPT.format(
+                context_with_citations=context_str,
+                query=query,
+            )
         )
-        answer = response.content[0].text.strip()
+        answer = response.text.strip()
 
         # Count citation references in the answer
-        import re
         citations_found = set(re.findall(r"\[Source\s*(\d+)\]", answer, re.IGNORECASE))
         citation_count = len(citations_found)
 
