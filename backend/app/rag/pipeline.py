@@ -105,8 +105,8 @@ async def run_rag_pipeline(
         if auto_ingest:
             ingest_topic = expanded_queries[0] if expanded_queries else user_query
             logger.info("Auto-ingesting for zero-retrieval topic: '%s' (using query: '%s')", user_query, ingest_topic)
-            from app.ingestion.tasks import _ingest_topic_all_sources
-            await _ingest_topic_all_sources(ingest_topic, max_results=15, sources=["pubmed"])
+            from app.routers.ingest import _run_ingestion
+            await _run_ingestion(ingest_topic, max_results=15, sources=["pubmed"])
             return await run_rag_pipeline(user_query, max_sources, use_cache, auto_ingest=False)
 
         logger.info("Pipeline exit: zero chunks retrieved")
@@ -142,8 +142,8 @@ async def run_rag_pipeline(
         if auto_ingest:
             ingest_topic = expanded_queries[0] if expanded_queries else user_query
             logger.info("Auto-ingesting for low-confidence topic: '%s' (using query: '%s')", user_query, ingest_topic)
-            from app.ingestion.tasks import _ingest_topic_all_sources
-            await _ingest_topic_all_sources(ingest_topic, max_results=15, sources=["pubmed"])
+            from app.routers.ingest import _run_ingestion
+            await _run_ingestion(ingest_topic, max_results=15, sources=["pubmed"])
             return await run_rag_pipeline(user_query, max_sources, use_cache, auto_ingest=False)
 
         return _build_no_answer_response(

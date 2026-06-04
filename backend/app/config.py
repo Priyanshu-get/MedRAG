@@ -52,6 +52,7 @@ class Settings(BaseSettings):
     # ── RAG Pipeline ───────────────────────────────────────
     max_retrieved_chunks: int = 20
     rerank_top_k: int = 5
+    rerank_provider: str = "local"              # "local" | "none"
     similarity_threshold: float = 0.72
     hallucination_confidence_threshold: float = 0.65
     max_context_tokens: int = 8000

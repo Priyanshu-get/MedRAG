@@ -9,6 +9,7 @@ import json
 import logging
 from typing import List, Optional
 
+# pyrefly: ignore [missing-import]
 import google.generativeai as genai
 from tenacity import retry, stop_after_attempt, wait_exponential
 

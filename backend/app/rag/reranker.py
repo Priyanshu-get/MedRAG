@@ -6,7 +6,7 @@ Adds ~200–400ms latency; query caching offsets this for repeated queries.
 from __future__ import annotations
 
 import logging
-from typing import Dict, List, Optional
+from typing import Dict, List 
 
 logger = logging.getLogger(__name__)
 
@@ -17,11 +17,18 @@ RERANKER_MODEL = "cross-encoder/ms-marco-MiniLM-L-6-v2"
 def warm_up_reranker() -> None:
     """Load the reranker model at startup to avoid cold-start latency."""
     global _reranker
+    from app.config import settings
+    if settings.rerank_provider == "none":
+        logger.info("Reranker provider is set to 'none'. Skipping warm-up.")
+        return
     if _reranker is None:
-        from sentence_transformers import CrossEncoder
-        logger.info("Loading reranker model: %s", RERANKER_MODEL)
-        _reranker = CrossEncoder(RERANKER_MODEL, max_length=512)
-        logger.info("Reranker model loaded")
+        try:
+            from sentence_transformers import CrossEncoder
+            logger.info("Loading reranker model: %s", RERANKER_MODEL)
+            _reranker = CrossEncoder(RERANKER_MODEL, max_length=512)
+            logger.info("Reranker model loaded")
+        except (ImportError, Exception) as exc:
+            logger.warning("Could not load local reranker model: %s", exc)
 
 
 def get_reranker():
@@ -50,8 +57,19 @@ def rerank_chunks(
     if not chunks:
         return []
 
+    from app.config import settings
+    if settings.rerank_provider == "none":
+        logger.debug("Bypassing reranking (provider='none')")
+        # Graceful fallback: use similarity score
+        fallback = sorted(
+            chunks, key=lambda x: x.get("similarity_score", 0.0), reverse=True
+        )
+        return fallback[:top_k] if top_k else fallback
+
     try:
         reranker = get_reranker()
+        if reranker is None:
+            raise ValueError("Reranker model is not loaded (likely due to missing dependency or provider='none')")
         pairs = [(query, chunk.get("text", "")[:512]) for chunk in chunks]
         scores = reranker.predict(pairs)
 
