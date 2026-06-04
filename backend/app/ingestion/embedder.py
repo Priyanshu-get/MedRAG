@@ -43,13 +43,15 @@ def _get_local_model():
 async def embed_texts(texts: List[str]) -> List[List[float]]:
     """
     Generate embeddings for a list of texts.
-    Dispatches to OpenAI or local BAAI/bge based on EMBEDDING_PROVIDER setting.
+    Dispatches to OpenAI, Gemini, or local BAAI/bge based on EMBEDDING_PROVIDER setting.
     """
     if not texts:
         return []
 
     if settings.embedding_provider == "openai":
         return await _embed_openai(texts)
+    elif settings.embedding_provider == "gemini":
+        return await _embed_gemini(texts)
     else:
         return _embed_local(texts)
 
@@ -58,6 +60,37 @@ async def embed_single(text: str) -> List[float]:
     """Convenience wrapper to embed a single text."""
     results = await embed_texts([text])
     return results[0] if results else []
+
+
+async def _embed_gemini(texts: List[str]) -> List[List[float]]:
+    """Gemini text-embedding-004 embeddings (768 dims)."""
+    import google.generativeai as genai
+    genai.configure(api_key=settings.gemini_api_key)
+
+    BATCH_SIZE = 100
+    all_embeddings: List[List[float]] = []
+
+    for i in range(0, len(texts), BATCH_SIZE):
+        batch = texts[i : i + BATCH_SIZE]
+        try:
+            import asyncio
+            loop = asyncio.get_running_loop()
+
+            def call_api():
+                return genai.embed_content(
+                    model="models/text-embedding-004",
+                    contents=batch,
+                    task_type="retrieval_document",
+                )
+
+            response = await loop.run_in_executor(None, call_api)
+            batch_embeddings = response["embedding"]
+            all_embeddings.extend(batch_embeddings)
+        except Exception as exc:
+            logger.error("Gemini embedding failed for batch %d: %s", i, exc)
+            all_embeddings.extend([[0.0] * 768] * len(batch))
+
+    return all_embeddings
 
 
 async def _embed_openai(texts: List[str]) -> List[List[float]]:
