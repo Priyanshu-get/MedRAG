@@ -22,7 +22,7 @@ Zero hallucination tolerance — if evidence doesn't exist, the system says so.
 
 ## ✨ Features
 
-- 🔬 **Evidence-only answers** — every response cites `[Source N]` from PubMed, PMC, Semantic Scholar, or ClinicalTrials.gov
+- 🔬 **Evidence-only answers** — every response cites `[Source N]` from PubMed, PMC, Semantic Scholar, ClinicalTrials.gov, or Trip Database
 - 🛡️ **7-layer hallucination guard** — LLM-as-judge validates context *before* generating any answer
 - 📚 **Hybrid retrieval** — dense (Qdrant semantic) + sparse (PostgreSQL BM25/FTS) merged with Reciprocal Rank Fusion
 - 🔄 **Medical query expansion** — Claude rewrites queries into MeSH-optimized PubMed search variants
@@ -305,11 +305,11 @@ Index medical literature for a topic.
 {
   "topic": "CRISPR gene therapy sickle cell disease",
   "max_results": 50,
-  "sources": ["pubmed", "pmc", "semantic_scholar", "clinical_trials"]
+  "sources": ["pubmed", "pmc", "semantic_scholar", "clinical_trials", "trip"]
 }
 ```
 
-Valid sources: `pubmed`, `pmc`, `semantic_scholar`, `clinical_trials`
+Valid sources: `pubmed`, `pmc`, `semantic_scholar`, `clinical_trials`, `trip`
 
 ### `GET /api/v1/health`
 

@@ -127,12 +127,13 @@ curl -X POST http://localhost:8000/api/v1/ingest \
     "max_results": 50
   }'
 
-# Index ACE Inhibitors literature for hypertension
+# Index ACE Inhibitors literature for hypertension via Trip Database
 curl -X POST http://localhost:8000/api/v1/ingest \
   -H "Content-Type: application/json" \
   -d '{
     "topic": "hypertension treatment ACE inhibitors guidelines",
-    "max_results": 50
+    "max_results": 20,
+    "sources": ["trip"]
   }'
 ```
 

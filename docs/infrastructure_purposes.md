@@ -56,6 +56,15 @@ This document explains the technical purpose, architectural role, and advantages
 
 ---
 
+## 🔗 6. Crossref & NCBI E-utilities (Metadata Resolution APIs)
+*   **What it is**: Publicly accessible web APIs containing indexing, metadata, and citation databases for scientific publications.
+*   **Role in MedRAG**: Resolves abstracts and enriches clinical evidence for metadata-only sources (such as the **Trip Database**).
+*   **Why it is used**:
+    1. **Overcoming API Limitations**: Some search engines, like the Trip Database, return search matches without full abstracts. To index them for RAG, MedRAG extracts the PMID or DOI and queries PubMed or Crossref to pull down the complete abstract dynamically on-the-fly.
+    2. **Ensuring Chunk Quality**: Ensures that only papers with valid, complete text are processed and stored, rather than indexing sparse titles.
+
+---
+
 ## 🧠 Summary Table: Stack Alignment
 
 | Infrastructure | Categorization | Architectural Problem it Solves | Impact on MedRAG Assistant |

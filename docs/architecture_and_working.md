@@ -92,3 +92,17 @@ Every user query submitted to the MedRAG system flows sequentially through these
 | **5** | `hallucination_guard.py` | Flags tangentially related context as insufficient. | Rejects query to prevent speculative assumptions. |
 | **6** | `pipeline.py` | Rigid, templated failure messages. | Prevents conversational drift when RAG fails. |
 | **7** | `pipeline.py` | Conditionless medical disclaimer appended to every payload. | Restricts clinical liability. |
+
+---
+
+## 📚 Data Sources & Ingestion Details
+
+The MedRAG system supports five data sources to ensure a wide clinical evidence base. When ingestion is triggered via `POST /api/v1/ingest`, the pipeline routes requests based on the selected sources:
+
+1. **PubMed**: Downloads clinical study abstracts using NCBI E-utilities.
+2. **PMC (PubMed Central)**: Downloads and indexes open-access full-text clinical studies.
+3. **Semantic Scholar**: Searches and retrieves academic publications across the Semantic Scholar Research Graph.
+4. **ClinicalTrials.gov**: Indexes registered clinical trials, protocols, primary endpoints, and results.
+5. **Trip Medical Database**:
+   - Queries `https://www.tripdatabase.com/api/search` to retrieve evidence-based clinical guidelines and reviews.
+   - **On-the-Fly Resolution**: Since Trip search returns meta-fields without abstracts, MedRAG parses PMIDs or DOIs from the Trip results and fetches full abstracts from PubMed (NCBI API) or Crossref (DOI API) in real-time, ensuring only high-quality, text-grounded chunks are added to Qdrant/Postgres.
