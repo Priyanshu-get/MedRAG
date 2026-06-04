@@ -100,12 +100,8 @@ async def test_pipeline_returns_grounded_answer_with_citations(sample_chunks, re
         mock_answer_model.return_value = mock_answer
 
         from app.rag.pipeline import run_rag_pipeline
-        # Reload to get fresh import
-        import importlib
-        import app.rag.pipeline as pipeline_module
-        importlib.reload(pipeline_module)
 
-        result = await pipeline_module.run_rag_pipeline(
+        result = await run_rag_pipeline(
             "What is the first-line treatment for hypertension?"
         )
 

@@ -148,6 +148,10 @@ async def _ingest_topic_all_sources(
         from app.ingestion.sources.clinical_trials import search_clinical_trials
         all_docs.extend(await search_clinical_trials(topic, max_results))
 
+    if "trip" in sources:
+        from app.ingestion.sources.trip import search_trip
+        all_docs.extend(await search_trip(topic, max_results))
+
     all_chunks = []
     for doc in all_docs:
         text = doc.get("full_text") or doc.get("abstract", "")

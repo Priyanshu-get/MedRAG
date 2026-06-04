@@ -39,7 +39,7 @@ async def ingest(
     )
 
     # Validate sources
-    valid_sources = {"pubmed", "pmc", "semantic_scholar", "clinical_trials"}
+    valid_sources = {"pubmed", "pmc", "semantic_scholar", "clinical_trials", "trip"}
     invalid = set(request.sources) - valid_sources
     if invalid:
         raise HTTPException(
@@ -105,6 +105,10 @@ async def _run_ingestion(topic: str, max_results: int, sources: list) -> int:
     if "clinical_trials" in sources:
         from app.ingestion.sources.clinical_trials import search_clinical_trials
         all_docs.extend(await search_clinical_trials(topic, max_results))
+
+    if "trip" in sources:
+        from app.ingestion.sources.trip import search_trip
+        all_docs.extend(await search_trip(topic, max_results))
 
     all_chunks = []
     for doc in all_docs:

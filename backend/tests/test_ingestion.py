@@ -4,7 +4,7 @@ Tests for ingestion pipeline components: PubMed parser, chunker, embedder.
 from __future__ import annotations
 
 import pytest
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 
 # ── Chunker tests ──────────────────────────────────────────────────────────────
@@ -159,3 +159,107 @@ def test_text_cleaner_normalizes_whitespace():
     clean = clean_text(messy)
     assert "  " not in clean
     assert clean.count("\n") <= 2
+
+
+# ── Trip Database Ingestion tests ──────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_search_trip_resolves_via_pubmed():
+    """Verify that search_trip resolves and enriches papers via PubMed PMID."""
+    from app.ingestion.sources.trip import search_trip
+
+    mock_search_response = {
+        "documents": {
+            "document": [
+                {
+                    "id": "11111",
+                    "title": "Trip Pubmed Paper",
+                    "link": "https://pubmed.ncbi.nlm.nih.gov/98765432/",
+                    "doi": None,
+                    "publication": "Trip Journal",
+                    "pubdate": "2024",
+                }
+            ]
+        }
+    }
+
+    mock_pubmed_result = [
+        {
+            "pmid": "98765432",
+            "pmc_id": None,
+            "doi": None,
+            "title": "Trip Pubmed Paper",
+            "authors": ["Doe J"],
+            "journal": "Trip Journal",
+            "pub_date": "2024",
+            "abstract": "This is a resolved PubMed abstract from Trip.",
+            "source_type": "pubmed",
+        }
+    ]
+
+    with (
+        patch("httpx.AsyncClient.get") as mock_get,
+        patch("app.ingestion.sources.trip.fetch_pubmed_abstracts", new_callable=AsyncMock, return_value=mock_pubmed_result) as mock_fetch,
+    ):
+        mock_resp = MagicMock()
+        mock_resp.json.return_value = mock_search_response
+        mock_resp.raise_for_status = MagicMock()
+        mock_get.return_value = mock_resp
+
+        results = await search_trip("hypertension", max_results=1)
+
+    assert len(results) == 1
+    assert results[0]["pmid"] == "98765432"
+    assert results[0]["source_type"] == "trip"
+    assert results[0]["abstract"] == "This is a resolved PubMed abstract from Trip."
+    mock_fetch.assert_called_once_with(["98765432"])
+
+
+@pytest.mark.asyncio
+async def test_search_trip_resolves_via_crossref():
+    """Verify that search_trip resolves and enriches papers via Crossref DOI."""
+    from app.ingestion.sources.trip import search_trip
+
+    mock_search_response = {
+        "documents": {
+            "document": [
+                {
+                    "id": "22222",
+                    "title": "Trip Crossref Paper",
+                    "link": "https://doi.org/10.1000/xyz123",
+                    "doi": "10.1000/xyz123",
+                    "publication": "CrossRef Journal",
+                    "pubdate": "2023",
+                }
+            ]
+        }
+    }
+
+    mock_crossref_result = {
+        "pmid": None,
+        "pmc_id": None,
+        "doi": "10.1000/xyz123",
+        "title": "Trip Crossref Paper",
+        "authors": ["Doe J"],
+        "journal": "CrossRef Journal",
+        "pub_date": "2023",
+        "abstract": "This is a resolved CrossRef abstract from Trip.",
+        "source_type": "crossref",
+    }
+
+    with (
+        patch("httpx.AsyncClient.get") as mock_get,
+        patch("app.ingestion.sources.trip.lookup_doi", new_callable=AsyncMock, return_value=mock_crossref_result) as mock_lookup,
+    ):
+        mock_resp = MagicMock()
+        mock_resp.json.return_value = mock_search_response
+        mock_resp.raise_for_status = MagicMock()
+        mock_get.return_value = mock_resp
+
+        results = await search_trip("hypertension", max_results=1)
+
+    assert len(results) == 1
+    assert results[0]["doi"] == "10.1000/xyz123"
+    assert results[0]["source_type"] == "trip"
+    assert results[0]["abstract"] == "This is a resolved CrossRef abstract from Trip."
+    mock_lookup.assert_called_once_with("10.1000/xyz123")
